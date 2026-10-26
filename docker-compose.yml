@@ -1,0 +1,39 @@
+services:
+  ecc_memory_vault:
+    image: redis:7-alpine
+    container_name: ecc_memory_vault
+    restart: unless-stopped
+    ports:
+      - "4000:6379"
+    networks:
+      - ecc_network
+    volumes:
+      - ecc_vault_data:/data
+
+  ecc_core:
+    image: ubuntu:22.04
+    container_name: ecc_core
+    restart: unless-stopped
+    working_dir: /ecc_system
+    environment:
+      - OLLAMA_HOST=http://10.0.0.63:11434
+      - VAULT_URI=redis://ecc_memory_vault:6379
+      - LANG=C.UTF-8
+    command: >
+      bash -c "apt-get update && apt-get install -y curl git build-essential python3 python3-pip &&
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&
+      apt-get install -y nodejs &&
+      tail -f /dev/null"
+    tty: true
+    stdin_open: true
+    networks:
+      - ecc_network
+    depends_on:
+      - ecc_memory_vault
+
+volumes:
+  ecc_vault_data:
+
+networks:
+  ecc_network:
+    driver: bridge
